@@ -34,7 +34,7 @@ OK="${Green}[OK]${Font}"
 Error="${RedW}[错误]${Font}"
 Warning="${RedW}[警告]${Font}"
 
-shell_version="1.9.3.3"
+shell_version="1.9.3.4"
 shell_mode="未安装"
 tls_mode="None"
 ws_grpc_mode="None"
@@ -1598,7 +1598,19 @@ acme_cron_update() {
     else
         crontab_file="/var/spool/cron/crontabs/root"
     fi
-    if [[ ! -f ${ssl_update_file} ]] || [[ $(crontab -l | grep -c "ssl_update.sh") -lt 1 ]]; then
+    if [[ -f ${ssl_update_file} ]] && [[ $(crontab -l | grep -c "ssl_update.sh") == "1" ]]; then
+        echo -e "\n${GreenBG} 已设置证书自动更新 ${Font}"
+        echo -e "${GreenBG} 是否需要删除证书自动更新 [Y/${Red}N${Font}${GreenBG}]? ${Font}"
+        read -r remove_acme_cron_update_fq
+        case $remove_acme_cron_update_fq in
+        [yY][eE][sS] | [yY])
+            sed -i "/ssl_update.sh/d" ${crontab_file}
+            rm -rf ${ssl_update_file}
+            judge "删除证书自动更新"
+            ;;
+        *) ;;
+        esac
+    else
         echo -e "\n${GreenBG} 未设置证书自动更新 ${Font}"
         echo -e "${GreenBG} 是否设置证书自动更新 (推荐) [${Red}Y${Font}${GreenBG}/N]? ${Font}"
         read -r acme_cron_update_fq
@@ -1617,18 +1629,6 @@ acme_cron_update() {
                 echo -e "${Error} ${RedBG} 自定义证书不支持此操作! ${Font}"
             fi
             ;;
-        esac
-    else
-        echo -e "\n${GreenBG} 已设置证书自动更新 ${Font}"
-        echo -e "${GreenBG} 是否需要删除证书自动更新 [Y/${Red}N${Font}${GreenBG}]? ${Font}"
-        read -r remove_acme_cron_update_fq
-        case $remove_acme_cron_update_fq in
-        [yY][eE][sS] | [yY])
-            sed -i "/ssl_update.sh/d" ${crontab_file}
-            rm -rf ${ssl_update_file}
-            judge "删除证书自动更新"
-            ;;
-        *) ;;
         esac
     fi
 }
